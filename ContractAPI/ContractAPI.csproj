@@ -233,6 +233,13 @@
     </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\Contract.cs" />
+    <Compile Include="Models\Response\ResponsePlayer.cs" />
+    <Compile Include="Models\Response\ResponseNationality.cs" />
+    <Compile Include="Models\Response\ResponseContinent.cs" />
+    <Compile Include="Models\Response\ResponseCountry.cs" />
+    <Compile Include="Models\Response\ResponseLeague.cs" />
+    <Compile Include="Models\Response\ResponseContract.cs" />
+    <Compile Include="Models\Response\ResponseTeam.cs" />
     <Compile Include="Models\Validations\ValidationContract.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

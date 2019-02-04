@@ -10,17 +10,46 @@ using System.Net.Http;
 using FluentValidation.Results;
 using AutoMapper;
 using ContractAPI.Helpers;
+using ContractAPI.Models.Response;
+using RestSharp;
+using System.Configuration;
+using Newtonsoft.Json;
 
 namespace ContractAPI.Controllers
 {
     [BearerAuthentication]
     public class ContractsController : ApiController
     {
+
         public HttpResponseMessage Get()
         {
             using (ContractDBContext db = new ContractDBContext())
             {
-                return Request.CreateResponse(HttpStatusCode.OK, db.Contracts.ToList());
+                List<ResponseContract> returnList = new List<ResponseContract>();
+                foreach (var item in db.Contracts.ToList())
+                {
+                    ResponseContract itemToAdd = new ResponseContract();
+
+                    var Client = new RestClient(ConfigurationManager.AppSettings["SERVICE_ADDRESS_PLAYER"]);
+                    var uri = string.Format("/players/{0}", item.PlayerId);
+                    var request = new RestRequest(uri, Method.GET);
+                    request.AddParameter("Authorization", string.Format("Bearer " + ConfigurationManager.AppSettings["SERVICE_AUTHKEY"]), ParameterType.HttpHeader);
+                    IRestResponse response = Client.Execute(request);
+                    var responsePlayer = JsonConvert.DeserializeObject<ResponsePlayer>(response.Content);
+
+                    Client = new RestClient(ConfigurationManager.AppSettings["SERVICE_ADDRESS_TEAM"]);
+                    uri = string.Format("/teams/{0}", item.TeamId);
+                    request = new RestRequest(uri, Method.GET);
+                    request.AddParameter("Authorization", string.Format("Bearer " + ConfigurationManager.AppSettings["SERVICE_AUTHKEY"]), ParameterType.HttpHeader);
+                    response = Client.Execute(request);
+                    var responseTeam = JsonConvert.DeserializeObject<ResponseTeam>(response.Content);
+
+                    itemToAdd = Mapper.Map<ResponseContract>(item);
+                    itemToAdd.Player = responsePlayer;
+                    itemToAdd.Team = responseTeam;
+                    returnList.Add(itemToAdd);
+                }
+                return Request.CreateResponse(HttpStatusCode.OK, returnList);
             }
         }
 
@@ -28,9 +57,43 @@ namespace ContractAPI.Controllers
         {
             using (ContractDBContext db = new ContractDBContext())
             {
-                return db.Contracts.Find(id) == null ? Request.CreateResponse(HttpStatusCode.OK, new Contract()) : Request.CreateResponse(HttpStatusCode.Created, db.Contracts.Find(id));
+                ResponseContract returnItem = new ResponseContract();
+                Contract item = db.Contracts.Find(id);
+                if (item == null)
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, returnItem);
+                }
+                else
+                {
+                    var Client = new RestClient(ConfigurationManager.AppSettings["SERVICE_ADDRESS_PLAYER"]);
+                    var uri = string.Format("/players/{0}", item.PlayerId);
+                    var request = new RestRequest(uri, Method.GET);
+                    request.AddParameter("Authorization", string.Format("Bearer " + ConfigurationManager.AppSettings["SERVICE_AUTHKEY"]), ParameterType.HttpHeader);
+                    IRestResponse response = Client.Execute(request);
+                    var responsePlayer = JsonConvert.DeserializeObject<ResponsePlayer>(response.Content);
+
+                    Client = new RestClient(ConfigurationManager.AppSettings["SERVICE_ADDRESS_TEAM"]);
+                    uri = string.Format("/teams/{0}", item.TeamId);
+                    request = new RestRequest(uri, Method.GET);
+                    request.AddParameter("Authorization", string.Format("Bearer " + ConfigurationManager.AppSettings["SERVICE_AUTHKEY"]), ParameterType.HttpHeader);
+                    response = Client.Execute(request);
+                    var responseTeam = JsonConvert.DeserializeObject<ResponseTeam>(response.Content);
+
+                    returnItem = Mapper.Map<ResponseContract>(item);
+                    returnItem.Player = responsePlayer;
+                    returnItem.Team = responseTeam;
+                    return Request.CreateResponse(HttpStatusCode.OK, returnItem);
+                }
             }
         }
+
+        //public HttpResponseMessage Get(int id)
+        //{
+        //    using (ContractDBContext db = new ContractDBContext())
+        //    {
+        //        return db.Contracts.Find(id) == null ? Request.CreateResponse(HttpStatusCode.OK, new Contract()) : Request.CreateResponse(HttpStatusCode.Created, db.Contracts.Find(id));
+        //    }
+        //}
 
         [HttpPost]
         public HttpResponseMessage Post([FromBody]Contract request)
