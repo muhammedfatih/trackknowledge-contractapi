@@ -87,6 +87,7 @@ namespace ContractAPI.Controllers
             }
         }
 
+        [Route("contracts/player/{playerId}/last")]
         public HttpResponseMessage GetLastByPlayerId(int playerId)
         {
             using (ContractDBContext db = new ContractDBContext())
@@ -96,6 +97,7 @@ namespace ContractAPI.Controllers
             }
         }
 
+        [Route("contracts/player/{playerId}/all")]
         public HttpResponseMessage GetAllByPlayerId(int playerId)
         {
             using (ContractDBContext db = new ContractDBContext())
